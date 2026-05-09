@@ -19,7 +19,7 @@ mkdir -p "$ROOT/docker/monitoring/grafana/provisioning/dashboards"
 mkdir -p "$ROOT/docker/monitoring/grafana/provisioning/datasources"
 
 echo "# Django multi-stage Dockerfile" > "$ROOT/docker/Dockerfile.backend"
-echo "# Next.js production Dockerfile" > "$ROOT/docker/Dockerfile.frontend"
+echo "# Vite production Dockerfile" > "$ROOT/docker/Dockerfile.frontend"
 echo "# Celery worker Dockerfile" > "$ROOT/docker/Dockerfile.worker"
 echo "# Daphne ASGI Dockerfile [P3]" > "$ROOT/docker/Dockerfile.channels"
 echo "# Main Nginx configuration" > "$ROOT/docker/nginx/nginx.conf"
@@ -83,15 +83,13 @@ echo "# Git Commit Conventions" > "$ROOT/coding/commit-conventions.md"
 mkdir -p "$ROOT/project_management/phases"
 mkdir -p "$ROOT/project_management/tasks"
 
-echo "# Phase 1: Foundation" > "$ROOT/project_management/phases/phase1-foundation.md"
-echo "# Phase 2: Core Platform" > "$ROOT/project_management/phases/phase2-core.md"
-echo "# Phase 3: Social Layer" > "$ROOT/project_management/phases/phase3-social.md"
-echo "# Phase 4: AI Foundation" > "$ROOT/project_management/phases/phase4-ai-foundation.md"
-echo "# Phase 5: Advanced RAG" > "$ROOT/project_management/phases/phase5-advanced-rag.md"
-echo "# Phase 6: Agentic Systems" > "$ROOT/project_management/phases/phase6-agentic.md"
-echo "# Phase 7: Observability" > "$ROOT/project_management/phases/phase7-observability.md"
-echo "# Phase 8: Enterprise Hardening" > "$ROOT/project_management/phases/phase8-hardening.md"
-echo "# Phase 9: Scale & Optimization" > "$ROOT/project_management/phases/phase9-scale.md"
+echo "# Phase 1: Problem Formalisation" > "$ROOT/project_management/phases/phase1-formalisation.md"
+echo "# Phase 2: Data Infrastructure" > "$ROOT/project_management/phases/phase2-data.md"
+echo "# Phase 3: Optimisation Engine" > "$ROOT/project_management/phases/phase3-optimisation.md"
+echo "# Phase 4: Scenario Engine" > "$ROOT/project_management/phases/phase4-scenario.md"
+echo "# Phase 5: Operational Intelligence Layer" > "$ROOT/project_management/phases/phase5-intelligence.md"
+echo "# Phase 6: Dashboard and User Interface" > "$ROOT/project_management/phases/phase6-dashboard.md"
+echo "# Phase 7: Advanced Research Extensions" > "$ROOT/project_management/phases/phase7-advanced.md"
 echo "# Task Backlog" > "$ROOT/project_management/tasks/backlog.md"
 echo "# Project Milestones" > "$ROOT/project_management/milestones.md"
 
@@ -202,7 +200,7 @@ py "$AI/ingestion/pipeline.py" "Content ingestion orchestrator"
 init "$AI/ingestion/sources"
 py "$AI/ingestion/sources/docs.py" "Ingest from docs/ directory"
 py "$AI/ingestion/sources/codebase.py" "Ingest repository source code"
-py "$AI/ingestion/sources/platform.py" "Ingest platform content (threads, forums)"
+py "$AI/ingestion/sources/telemetry.py" "Ingest historical telemetry and market data"
 py "$AI/ingestion/sources/external.py" "Ingest external URLs/APIs"
 init "$AI/ingestion/processors"
 py "$AI/ingestion/processors/cleaner.py" "Text cleaning and normalization"
@@ -337,7 +335,7 @@ py "$BE/worker/schedules.py" "Periodic task schedule (celery beat)"
 py "$BE/worker/health.py" "Worker health check endpoint"
 
 # --- Domain app enhancements [P2] — add services/selectors/tasks/tests ---
-for app in users groups forums events taxonomy; do
+for app in forecasting generators scheduling market network scenarios intelligence telemetry; do
     APP="$BE/apps/$app"
     [ -f "$APP/services.py" ] || py "$APP/services.py" "Business logic layer for $app"
     [ -f "$APP/selectors.py" ] || py "$APP/selectors.py" "Query/read logic layer for $app"
@@ -349,38 +347,10 @@ for app in users groups forums events taxonomy; do
     [ -f "$APP/tests/test_api.py" ] || py "$APP/tests/test_api.py" "API integration tests for $app"
 done
 
-# --- notifications/ enhancements [P3] ---
-NOTIF="$BE/apps/notifications"
-[ -f "$NOTIF/services.py" ] || py "$NOTIF/services.py" "Notification sending and management"
-[ -f "$NOTIF/selectors.py" ] || py "$NOTIF/selectors.py" "Query unread/filtered notifications"
-[ -f "$NOTIF/tasks.py" ] || py "$NOTIF/tasks.py" "Async email/push delivery tasks"
-[ -f "$NOTIF/signals.py" ] || py "$NOTIF/signals.py" "Auto-notify on thread reply, RSVP, etc."
-[ -f "$NOTIF/channels.py" ] || py "$NOTIF/channels.py" "Notification channel registry"
-mkdir -p "$NOTIF/templates/email"
-[ -f "$NOTIF/templates/email/welcome.html" ] || echo "<!-- Welcome email template -->" > "$NOTIF/templates/email/welcome.html"
-[ -f "$NOTIF/templates/email/thread_reply.html" ] || echo "<!-- Thread reply notification -->" > "$NOTIF/templates/email/thread_reply.html"
-mkdir -p "$NOTIF/tests"
-init "$NOTIF/tests"
-
-# --- chat/ enhancements [P3] ---
-CHAT="$BE/apps/chat"
-[ -f "$CHAT/consumers.py" ] || py "$CHAT/consumers.py" "Django Channels WebSocket consumers"
-[ -f "$CHAT/routing.py" ] || py "$CHAT/routing.py" "WebSocket URL routing"
-[ -f "$CHAT/services.py" ] || py "$CHAT/services.py" "Chat message services"
-mkdir -p "$CHAT/tests"
-init "$CHAT/tests"
-
-# --- media/ [P3] ---
-mkdir -p "$BE/apps/media"
-init "$BE/apps/media"
-py "$BE/apps/media/models.py" "MediaFile model (S3 ref, metadata, thumbnails)"
-py "$BE/apps/media/services.py" "Upload, resize, optimize media"
-py "$BE/apps/media/tasks.py" "Async thumbnail generation, virus scan"
-py "$BE/apps/media/storage.py" "S3 storage backend adapter"
-py "$BE/apps/media/admin.py" "Media admin configuration"
-py "$BE/apps/media/apps.py" "Media app config"
-mkdir -p "$BE/apps/media/tests"
-init "$BE/apps/media/tests"
+# --- websockets/ enhancements [P3] ---
+STREAMS="$BE/apps/telemetry"
+[ -f "$STREAMS/consumers.py" ] || py "$STREAMS/consumers.py" "Django Channels WebSocket consumers for live telemetry"
+[ -f "$STREAMS/routing.py" ] || py "$STREAMS/routing.py" "WebSocket URL routing"
 
 # --- observability/ [P7] ---
 mkdir -p "$BE/observability/logging"
