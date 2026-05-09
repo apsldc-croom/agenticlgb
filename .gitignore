@@ -1,5 +1,6 @@
 /env
 .env.*
+/LGB-backend/env
 
 */node_modules
 */__pycache__

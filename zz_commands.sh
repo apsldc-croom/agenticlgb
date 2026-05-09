@@ -1,13 +1,13 @@
 git add .
-git commit -m "frotnend pm added and need to be checked"
+git commit -m "frontend pm is working but need to lot added"
 git push origin main
 
 cd LGB-frontend
 npm run dev
 
 
-source env/Scripts/activate
 cd LGB-backend
+source env/Scripts/activate
 python manage.py runserver
 
 py manage.py createsuperuser
