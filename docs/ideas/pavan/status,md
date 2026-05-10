@@ -1,0 +1,20 @@
+What This Means Technically
+
+Your deployment stack is now VERY close to operational.
+
+You already have:
+
+VM
+Docker
+Compose
+PostgreSQL
+Redis
+Celery
+frontend build
+backend image
+networking
+volumes
+
+working.
+
+This is substantial progress.

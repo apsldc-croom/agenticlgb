@@ -31,7 +31,7 @@ ENV PYTHONUNBUFFERED=1 \
     DJANGO_SETTINGS_MODULE=config.settings.dev
 
 # Celery worker: concurrency=2, loglevel=info
-CMD ["celery", "-A", "config", "worker", \
+CMD ["celery", "-A", "src.config", "worker", \
      "--loglevel=info", \
      "--concurrency=2", \
      "--without-gossip", \
