@@ -28,9 +28,9 @@ services:
     container_name: lgb_db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: postgres
+      POSTGRES_DB: agenticlgb
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: "123"
+      POSTGRES_PASSWORD: "postgres"
     ports:
       - "5432:5432"       # exposed so you can connect from host (pgAdmin etc.)
     volumes:
@@ -68,7 +68,7 @@ services:
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.dev
       DEBUG: "true"
-      DATABASE_URL: postgres://postgres:123@db:5432/postgres
+      DATABASE_URL: postgres://postgres:postgres@db:5432/agenticlgb
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       CORS_ALLOWED_ORIGINS: "http://localhost,http://localhost:80"
@@ -101,7 +101,7 @@ services:
     restart: unless-stopped
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.dev
-      DATABASE_URL: postgres://postgres:123@db:5432/postgres
+      DATABASE_URL: postgres://postgres:postgres@db:5432/agenticlgb
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
     depends_on:
