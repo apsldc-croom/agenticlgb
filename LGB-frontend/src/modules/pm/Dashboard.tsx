@@ -5,16 +5,25 @@ import {
   LinearProgress, Card, CardContent, Chip 
 } from '@mui/material';
 import ReactECharts from 'echarts-for-react';
-import { pmApi } from '../../services/pm.api';
-import type { ProjectDashboard } from './types';
+import { PMService } from '../../services/pm.api';
+import type { PMDashboard as PMDashboardType } from '../../services/pm.api';
+
+// Map the old ProjectDashboard shape to what PMService.getDashboard returns
+type ProjectDashboard = PMDashboardType & {
+  overall_progress: number;
+  status_breakdown: Record<string, number>;
+  open_tech_debt: number;
+  unresolved_insights: number;
+  phases: { phase_number: number; name: string; status: string; progress: number }[];
+};
 
 const PMDashboard: React.FC = () => {
-  // Using the slug 'lgb-platform' as it's the default seeded project
   const { data, isLoading, error } = useQuery<ProjectDashboard>({
     queryKey: ['pm-dashboard', 'lgb-platform'],
-    queryFn: () => pmApi.getProjectDashboard('lgb-platform'),
+    queryFn: () => PMService.getDashboard() as Promise<ProjectDashboard>,
     retry: 1,
   });
+
 
   if (isLoading) {
     return (

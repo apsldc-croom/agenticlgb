@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import {
-    Target, Layers, CheckCircle2, Clock, AlertCircle, Zap, Shield, Brain, Server, Code2,
-    FileText, TestTube, Gauge, ChevronRight, GitBranch, LayoutDashboard, Rocket, Package,
-    FileCode, AlertTriangle, Globe, TrendingUp, CheckCircle, Circle, ExternalLink,
+    Target, Layers, CheckCircle2, Shield, Brain, Server, Code2,
+    FileText, TestTube, Gauge, ChevronRight, GitBranch, LayoutDashboard, Package,
+    AlertTriangle, Globe, TrendingUp, CheckCircle, Circle, ExternalLink,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PMService } from '../../services/pm.api';
@@ -127,7 +127,6 @@ export default function PMDashboard() {
     ];
 
     const shippedFeatures = features.filter(f => f.status === 'shipped').length;
-    const publishedDocs = docs.filter(d => d.status === 'published' || d.status === 'draft').length;
     const avgDocComplete = docs.length > 0 ? Math.round(docs.reduce((a, d) => a + d.completeness, 0) / docs.length) : 0;
 
     return (
