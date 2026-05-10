@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { login as loginApi, TokenResponse } from '../services/auth.api';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { login as loginApi } from '../services/auth.api';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -10,7 +10,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
 

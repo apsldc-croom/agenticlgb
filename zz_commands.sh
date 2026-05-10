@@ -1,5 +1,5 @@
 git add .
-git commit -m "frontend pm is working but need to lot added"
+git commit -m "pm dashboard little bit improved"
 git push origin main
 
 cd LGB-frontend

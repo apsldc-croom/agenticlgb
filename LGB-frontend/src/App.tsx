@@ -2,7 +2,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, CssBaseline, Box, Typography } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import theme from './theme';
-import PMDashboard from './modules/pm/Dashboard';
+import PMDashboard from './pages/PM/PMDashboard';
+import PMTasks from './pages/PM/PMTasks';
 import Login from './pages/Auth/Login';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -35,7 +36,7 @@ function App() {
                 </ProtectedRoute>
               }>
                 <Route index element={
-                  <Box>
+                  <Box sx={{ p: 4 }}>
                     <Typography variant="h4" gutterBottom>
                       SLDC Operational Copilot
                     </Typography>
@@ -45,6 +46,7 @@ function App() {
                   </Box>
                 } />
                 <Route path="pm" element={<PMDashboard />} />
+                <Route path="pm/tasks" element={<PMTasks />} />
               </Route>
             </Routes>
           </BrowserRouter>

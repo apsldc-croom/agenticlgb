@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Box, Typography, AppBar, Toolbar, Button } from '@mui/material';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -25,7 +25,7 @@ export default function MainLayout() {
         </Toolbar>
       </AppBar>
       
-      <Box sx={{ p: 4, flexGrow: 1, overflow: 'auto' }}>
+      <Box sx={{ p: 0, flexGrow: 1, overflow: 'auto' }}>
         <Outlet />
       </Box>
     </Box>
