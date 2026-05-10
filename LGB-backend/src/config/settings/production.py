@@ -12,7 +12,9 @@ from .base import *  # noqa: F401, F403
 # ---------------------------------------------------------
 DEBUG = False
 
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")  # noqa: F405
+import os as _os
+_raw_hosts = _os.environ.get("ALLOWED_HOSTS", "34.93.126.189,localhost,127.0.0.1")
+ALLOWED_HOSTS = [h.strip() for h in _raw_hosts.split(",") if h.strip()]
 
 SECRET_KEY = env("DJANGO_SECRET_KEY")  # noqa: F405 — MUST be set in production
 
