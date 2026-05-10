@@ -5,8 +5,8 @@ export interface TokenResponse {
   refresh: string;
 }
 
-export const login = async (username: string, password: string): Promise<TokenResponse> => {
-  const response = await api.post<TokenResponse>('/auth/token/', { username, password });
+export const login = async (email: string, password: string): Promise<TokenResponse> => {
+  const response = await api.post<TokenResponse>('/auth/token/', { email, password });
   return response.data;
 };
 

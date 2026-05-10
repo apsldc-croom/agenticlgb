@@ -31,7 +31,7 @@ const StyledButton = styled(Button)(({ theme }) => ({
 }));
 
 export default function Login() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -44,14 +44,14 @@ export default function Login() {
     e.preventDefault();
     setError('');
     
-    if (!username || !password) {
+    if (!email || !password) {
       setError('Please fill in all fields.');
       return;
     }
 
     setLoading(true);
     try {
-      await login(username, password);
+      await login(email, password);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to login. Please check your credentials.');
@@ -94,13 +94,13 @@ export default function Login() {
             margin="normal"
             required
             fullWidth
-            id="username"
-            label="Username"
-            name="username"
-            autoComplete="username"
+            id="email"
+            label="Email Address"
+            name="email"
+            autoComplete="email"
             autoFocus
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             variant="outlined"
             sx={{
               '& .MuiOutlinedInput-root': {
