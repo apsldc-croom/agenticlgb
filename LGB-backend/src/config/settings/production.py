@@ -43,14 +43,18 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
 
 # ---------------------------------------------------------
-# EMAIL — Production SMTP
+# EMAIL — fallback to console if SMTP not configured yet
 # ---------------------------------------------------------
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = env("EMAIL_HOST")  # noqa: F405
-EMAIL_PORT = env.int("EMAIL_PORT", default=587)  # noqa: F405
-EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")  # noqa: F405
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")  # noqa: F405
-EMAIL_USE_TLS = True
+_email_host = env("EMAIL_HOST", default="")  # noqa: F405
+if _email_host:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = _email_host
+    EMAIL_PORT = env.int("EMAIL_PORT", default=587)  # noqa: F405
+    EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")  # noqa: F405
+    EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")  # noqa: F405
+    EMAIL_USE_TLS = True
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # ---------------------------------------------------------
 # LOGGING — JSON structured for production
