@@ -1,6 +1,6 @@
 #pushing the changes to cloud
 git add .
-git commit -m "pm dashboard little bit improved"
+git commit -m "docker setup in progress"
 git push origin main
 
 
@@ -76,3 +76,32 @@ docker compose -f docker-compose.prod.yml exec backend python manage.py createsu
 curl http://34.93.126.189/api/health/
 
 # STEP 5 — After that, every git push to main auto-deploys via GitHub Actions
+# 1. On VM — generate deploy SSH key
+ssh usr_789spr_gmail_com@34.93.126.189
+ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/github_actions -N ""
+cat ~/.ssh/github_actions.pub >> ~/.ssh/authorized_keys
+cat ~/.ssh/github_actions   # copy this
+
+# 2. Add 3 secrets in GitHub repo → Settings → Secrets → Actions
+#   VM_HOST = 34.93.126.189
+#   VM_USER = usr_789spr_gmail_com
+#   VM_SSH_KEY = (paste private key)
+
+# 3. Clone repo + fill .env.prod on VM, then first manual deploy
+
+
+ssh usr_789spr_gmail_com@34.93.126.189
+
+# Bootstrap (first time only)
+sudo git clone https://github.com/apsldc-croom/agenticlgb.git /opt/agenticlgb
+sudo chown -R $USER:$USER /opt/agenticlgb
+cd /opt/agenticlgb
+
+# Set secret key (only thing you MUST change in .env.prod)
+nano .env.prod
+# → change DJANGO_SECRET_KEY to a real 50-char random string
+
+# Start stack
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+docker compose -f docker-compose.prod.yml exec -T backend python manage.py migrate
+curl http://34.93.126.189/api/health/
