@@ -69,6 +69,7 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
+    "core.users.apps.UsersConfig",
     "pm.apps.PmConfig",
 ]
 
@@ -133,7 +134,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # ---------------------------------------------------------
 # AUTH
 # ---------------------------------------------------------
-# AUTH_USER_MODEL = "users.User"   # Uncomment when users app is ready
+AUTH_USER_MODEL = "users.User"
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -195,6 +196,8 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
+    # Use enriched serializer that returns user profile alongside tokens
+    "TOKEN_OBTAIN_SERIALIZER": "core.users.serializers.LGBTokenObtainPairSerializer",
 }
 
 # ---------------------------------------------------------

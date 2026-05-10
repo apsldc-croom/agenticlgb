@@ -1,31 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
-    CheckCircle2,
-    Circle,
-    Clock,
-    AlertCircle,
-    ArrowLeft,
-    Filter,
-    Search,
-    ChevronDown,
-    ChevronUp,
-    Brain,
-    Server,
-    Code2,
-    Shield,
-    Layers,
-    FileText,
-    TestTube,
-    Gauge,
-    Pause,
-    X,
-    FileCode,
-    Timer,
-    Tag,
+    CheckCircle2, Circle, Clock, AlertCircle,
+    ArrowLeft, Filter, Search, ChevronDown, ChevronUp,
+    Brain, Server, Code2, Shield, Layers, FileText,
+    TestTube, Gauge, Pause, X, FileCode, Timer, Tag,
+    History, RefreshCw, CheckSquare,
 } from 'lucide-react';
-import { PMService } from '../../services/pm.api';
-import type { PMTask, PMPhase } from '../../services/pm.api';
+import { PMService, usePMPolling } from '../../services/pm.api';
+import type { PMTask, PMPhase, PMStatusHistory } from '../../services/pm.api';
 
 /* ─── Config ─── */
 const STATUS: Record<string, { label: string; icon: typeof Circle; dot: string; text: string }> = {
@@ -196,6 +179,13 @@ export default function PMTasks() {
     const [fCategory, setFCategory] = useState('');
     const [showFilters, setShowFilters] = useState(!!initialPhase);
     const [expanded, setExpanded] = useState<number | null>(null);
+    const [selected, setSelected] = useState<Set<number>>(new Set());
+    const [bulkStatus, setBulkStatus] = useState('');
+    const [bulkLoading, setBulkLoading] = useState(false);
+    const [history, setHistory] = useState<PMStatusHistory[]>([]);
+    const [historyTaskId, setHistoryTaskId] = useState<number | null>(null);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
 
     const fetchTasks = useCallback(async () => {
         try {
@@ -206,13 +196,13 @@ export default function PMTasks() {
             if (fPriority) f.priority = fPriority;
             if (fCategory) f.category = fCategory;
             if (search) f.search = search;
-
             const [t, p] = await Promise.all([
                 PMService.listTasks(f),
                 phases.length ? Promise.resolve(phases) : PMService.listPhases(),
             ]);
             setTasks(t);
             if (!phases.length) setPhases(p);
+            setLastRefreshed(new Date());
         } catch (err) {
             console.error(err);
         } finally {
@@ -220,13 +210,44 @@ export default function PMTasks() {
         }
     }, [fPhase, fStatus, fPriority, fCategory, search]);
 
-    useEffect(() => { fetchTasks(); }, [fetchTasks]);
+    // 30-second auto-refresh
+    usePMPolling(fetchTasks, 30_000);
 
-    const handleStatusChange = async (id: number, status: string) => {
+    const handleStatusChange = async (id: number, newStatus: string) => {
+        // Optimistic update
+        setTasks(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
         try {
-            await PMService.updateTaskStatus(id, status);
-            setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
+            await PMService.updateTaskStatus(id, newStatus);
+            // Refresh history if this task's panel is open
+            if (historyTaskId === id) loadHistory(id);
+        } catch { fetchTasks(); } // revert on error
+    };
+
+    const handleBulkUpdate = async () => {
+        if (!bulkStatus || selected.size === 0) return;
+        setBulkLoading(true);
+        try {
+            const result = await PMService.bulkUpdateStatus([...selected], bulkStatus);
+            setSelected(new Set());
+            setBulkStatus('');
+            await fetchTasks();
+            console.info(`Bulk: ${result.updated} updated, ${result.skipped} skipped`);
         } catch (err) { console.error(err); }
+        finally { setBulkLoading(false); }
+    };
+
+    const toggleSelect = (id: number) => setSelected(prev => {
+        const next = new Set(prev);
+        next.has(id) ? next.delete(id) : next.add(id);
+        return next;
+    });
+
+    const loadHistory = async (taskId: number) => {
+        setHistoryTaskId(taskId);
+        setHistoryLoading(true);
+        const h = await PMService.getTaskHistory(taskId);
+        setHistory(h);
+        setHistoryLoading(false);
     };
 
     const clearAll = () => { setFPhase(''); setFStatus(''); setFPriority(''); setFCategory(''); setSearch(''); };
@@ -254,7 +275,13 @@ export default function PMTasks() {
                     </Link>
                     <div className="flex-1">
                         <h1 className="text-2xl font-bold text-white">Tasks</h1>
-                        <p className="text-sm text-slate-500">{tasks.length} tasks{activeCount > 0 ? ' (filtered)' : ''}</p>
+                        <p className="text-sm text-slate-500">
+                            {tasks.length} tasks{activeCount > 0 ? ' (filtered)' : ''}
+                            <span className="ml-3 text-slate-700 text-xs">
+                                <RefreshCw className="inline w-3 h-3 mr-1" />
+                                {lastRefreshed.toLocaleTimeString()}
+                            </span>
+                        </p>
                     </div>
                     <button
                         onClick={() => setShowFilters(!showFilters)}
@@ -302,12 +329,36 @@ export default function PMTasks() {
                     </div>
                 )}
 
+                {/* Bulk Toolbar */}
+                {selected.size > 0 && (
+                    <div className="flex items-center gap-3 mb-4 px-4 py-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20">
+                        <CheckSquare className="w-4 h-4 text-cyan-400" />
+                        <span className="text-sm text-cyan-300 font-medium">{selected.size} selected</span>
+                        <select
+                            value={bulkStatus}
+                            onChange={e => setBulkStatus(e.target.value)}
+                            className="ml-auto px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.1] text-sm text-slate-300 focus:outline-none"
+                        >
+                            <option value="">Set status…</option>
+                            {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                        </select>
+                        <button
+                            onClick={handleBulkUpdate}
+                            disabled={!bulkStatus || bulkLoading}
+                            className="px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 text-sm font-medium hover:bg-cyan-500/30 disabled:opacity-40 transition-all"
+                        >
+                            {bulkLoading ? 'Updating…' : 'Apply'}
+                        </button>
+                        <button onClick={() => setSelected(new Set())} className="text-slate-500 hover:text-white">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
+
                 {/* Task List */}
                 {loading ? (
                     <div className="space-y-2">
-                        {[1, 2, 3, 4, 5, 6, 7].map(i => (
-                            <div key={i} className="h-14 rounded-xl bg-white/[0.02] border border-white/[0.04] animate-pulse" />
-                        ))}
+                        {[1,2,3,4,5].map(i => <div key={i} className="h-14 rounded-xl bg-white/[0.02] border border-white/[0.04] animate-pulse" />)}
                     </div>
                 ) : tasks.length === 0 ? (
                     <div className="text-center py-20">
@@ -316,25 +367,94 @@ export default function PMTasks() {
                         <button onClick={clearAll} className="text-sm text-cyan-400 hover:text-cyan-300">Clear filters</button>
                     </div>
                 ) : (
-                    <div className="space-y-6">
-                        {Object.entries(grouped).map(([phaseName, phaseTasks]) => (
-                            <div key={phaseName}>
-                                <div className="flex items-center gap-2 mb-2.5">
-                                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{phaseName}</span>
-                                    <span className="text-[10px] text-slate-600 bg-white/[0.04] px-2 py-0.5 rounded-full">{phaseTasks.length}</span>
+                    <div className="flex gap-4">
+                        <div className="flex-1 space-y-6">
+                            {Object.entries(grouped).map(([phaseName, phaseTasks]) => (
+                                <div key={phaseName}>
+                                    <div className="flex items-center gap-2 mb-2.5">
+                                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{phaseName}</span>
+                                        <span className="text-[10px] text-slate-600 bg-white/[0.04] px-2 py-0.5 rounded-full">{phaseTasks.length}</span>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        {phaseTasks.map(task => (
+                                            <div key={task.id} className="flex items-start gap-2">
+                                                <button
+                                                    onClick={() => toggleSelect(task.id)}
+                                                    className={`mt-3.5 shrink-0 w-4 h-4 rounded border transition-all ${
+                                                        selected.has(task.id)
+                                                            ? 'bg-cyan-500 border-cyan-500'
+                                                            : 'border-white/[0.12] hover:border-cyan-500/50'
+                                                    }`}
+                                                />
+                                                <div className="flex-1">
+                                                    <TaskRow
+                                                        task={task}
+                                                        isExpanded={expanded === task.id}
+                                                        onToggle={() => setExpanded(expanded === task.id ? null : task.id)}
+                                                        onStatusChange={handleStatusChange}
+                                                    />
+                                                </div>
+                                                <button
+                                                    onClick={() => historyTaskId === task.id ? setHistoryTaskId(null) : loadHistory(task.id)}
+                                                    title="Status history"
+                                                    className={`mt-3 shrink-0 p-1.5 rounded-lg border transition-all ${
+                                                        historyTaskId === task.id
+                                                            ? 'border-indigo-500/30 text-indigo-400 bg-indigo-500/10'
+                                                            : 'border-white/[0.06] text-slate-600 hover:text-slate-300'
+                                                    }`}
+                                                >
+                                                    <History className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                                <div className="space-y-1.5">
-                                    {phaseTasks.map(task => (
-                                        <TaskRow
-                                            key={task.id} task={task}
-                                            isExpanded={expanded === task.id}
-                                            onToggle={() => setExpanded(expanded === task.id ? null : task.id)}
-                                            onStatusChange={handleStatusChange}
-                                        />
-                                    ))}
+                            ))}
+                        </div>
+
+                        {/* History Sidebar */}
+                        {historyTaskId !== null && (
+                            <div className="w-72 shrink-0">
+                                <div className="sticky top-6 rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                            <History className="w-3.5 h-3.5" /> Status History
+                                        </span>
+                                        <button onClick={() => setHistoryTaskId(null)} className="text-slate-600 hover:text-white">
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                    {historyLoading ? (
+                                        <div className="space-y-2">
+                                            {[1,2,3].map(i => <div key={i} className="h-10 rounded-lg bg-white/[0.03] animate-pulse" />)}
+                                        </div>
+                                    ) : history.length === 0 ? (
+                                        <p className="text-xs text-slate-600">No history yet.</p>
+                                    ) : (
+                                        <div className="relative pl-4">
+                                            <div className="absolute left-1.5 top-0 bottom-0 w-px bg-white/[0.06]" />
+                                            <div className="space-y-4">
+                                                {history.map(h => (
+                                                    <div key={h.id} className="relative">
+                                                        <div className="absolute -left-[11px] top-1 w-2 h-2 rounded-full bg-slate-700 border border-slate-600" />
+                                                        <div className="text-[10px] text-slate-600 mb-0.5">
+                                                            {new Date(h.changed_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                                                            {' · '}{h.changed_by_name}
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            <span className="text-[11px] text-slate-500">{h.from_status || 'created'}</span>
+                                                            <span className="text-[10px] text-slate-700">→</span>
+                                                            <span className="text-[11px] font-semibold text-cyan-400">{h.to_status}</span>
+                                                        </div>
+                                                        {h.note && <p className="text-[10px] text-slate-600 mt-0.5 italic">{h.note}</p>}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                        ))}
+                        )}
                     </div>
                 )}
             </div>

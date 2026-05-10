@@ -25,13 +25,15 @@ DATABASES = {
 
 # ---------------------------------------------------------
 # SECURITY HEADERS
+# Set SECURE_SSL=true in .env.prod AFTER SSL certificate is installed
 # ---------------------------------------------------------
-SECURE_SSL_REDIRECT = True
-SECURE_HSTS_SECONDS = 31_536_000  # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+_ssl = env.bool("SECURE_SSL", default=False)  # noqa: F405
+SECURE_SSL_REDIRECT = _ssl
+SECURE_HSTS_SECONDS = 31_536_000 if _ssl else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = _ssl
+SECURE_HSTS_PRELOAD = _ssl
+SESSION_COOKIE_SECURE = _ssl
+CSRF_COOKIE_SECURE = _ssl
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 

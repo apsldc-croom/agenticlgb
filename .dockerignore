@@ -1,0 +1,50 @@
+# Docker build context exclusions
+# Keeps images small and build fast
+
+# Git
+.git
+.gitignore
+.github
+
+# Python cache
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache
+**/.mypy_cache
+**/*.egg-info
+
+# Virtual environments
+**/env/
+**/venv/
+**/.venv/
+
+# SQLite (prod uses postgres)
+**/db.sqlite3
+
+# Node
+LGB-frontend/node_modules
+LGB-frontend/.cache
+
+# Frontend build output (rebuilt inside Docker)
+LGB-frontend/dist
+
+# Env files with secrets
+.env.prod
+.env.staging
+**/.env.local
+
+# IDE
+.vscode
+.idea
+**/.DS_Store
+
+# Docs / non-essential
+docs/
+coding/
+pm/
+project_management/
+setup/
+*.sh
+*.md

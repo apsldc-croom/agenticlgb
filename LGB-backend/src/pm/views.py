@@ -31,6 +31,7 @@ from .models import (
     Tag,
     Task,
     TaskDependency,
+    TaskStatusHistory,
     TechDebt,
 )
 from .serializers import (
@@ -52,6 +53,7 @@ from .serializers import (
     TaskDetailSerializer,
     TaskDependencySerializer,
     TaskListSerializer,
+    TaskStatusHistorySerializer,
     TechDebtSerializer,
 )
 
@@ -310,12 +312,60 @@ class TaskViewSet(viewsets.ModelViewSet):
         from django.utils import timezone
 
         task = self.get_object()
+        task._changed_by = request.user   # picked up by signal
         task.status = "completed"
         task.completed_at = timezone.now()
         task.save(update_fields=["status", "completed_at", "updated_at"])
         return Response(
             TaskDetailSerializer(task).data,
             status=status.HTTP_200_OK,
+        )
+
+    @action(detail=False, methods=["post"], url_path="bulk-update")
+    def bulk_update(self, request):
+        """
+        POST /api/v1/pm/tasks/bulk-update/
+        Body: { "ids": [1, 2, 3], "status": "in_progress" }
+
+        Bulk-update status for multiple tasks.
+        Each transition is recorded via the signal (changed_by = request.user).
+        """
+        ids = request.data.get("ids", [])
+        new_status = request.data.get("status", "")
+
+        valid_statuses = [c[0] for c in Task._meta.get_field("status").choices]
+        if not ids or new_status not in valid_statuses:
+            return Response(
+                {"error": "Provide 'ids' (list) and a valid 'status'."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        tasks = Task.objects.filter(id__in=ids)
+        updated_count = 0
+        for task in tasks:
+            if task.status != new_status:
+                task._changed_by = request.user
+                task.status = new_status
+                task.save(update_fields=["status", "updated_at"])
+                updated_count += 1
+
+        return Response(
+            {"updated": updated_count, "skipped": len(ids) - updated_count},
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=["get"], url_path="history")
+    def task_history(self, request, pk=None):
+        """
+        GET /api/v1/pm/tasks/{id}/history/
+        Returns the status change timeline for a task.
+        """
+        task = self.get_object()
+        history = TaskStatusHistory.objects.filter(
+            task=task
+        ).select_related("changed_by").order_by("-changed_at")
+        return Response(
+            TaskStatusHistorySerializer(history, many=True).data
         )
 
 

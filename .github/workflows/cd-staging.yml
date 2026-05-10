@@ -1,1 +1,4 @@
-# CD: Auto-deploy to staging
+# Staging workflow — DEFERRED
+# Per architecture decision: single VM deploy via cd-production.yml
+# Staging environment will be added when the core PM system stabilises.
+# See recommendation_plan.md for details.

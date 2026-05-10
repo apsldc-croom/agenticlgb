@@ -920,3 +920,65 @@ class AIInsight(models.Model):
 
     def __str__(self):
         return self.title
+
+
+# =========================================================
+# TASK STATUS HISTORY
+# =========================================================
+
+class TaskStatusHistory(models.Model):
+    """
+    Immutable audit log of every Task status transition.
+
+    Auto-populated by pm/signals.py on every Task save.
+    Never delete or update records in this table — append only.
+
+    Example timeline:
+      planning → in_progress  (changed_by: alice@lgb.com)
+      in_progress → review     (changed_by: alice@lgb.com)
+      review → completed       (changed_by: bob@lgb.com)
+    """
+
+    task = models.ForeignKey(
+        Task,
+        on_delete=models.CASCADE,
+        related_name="status_history",
+    )
+
+    from_status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        blank=True,   # blank on first creation (no previous status)
+    )
+
+    to_status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+    )
+
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="task_status_changes",
+    )
+
+    changed_at = models.DateTimeField(auto_now_add=True)
+
+    note = models.TextField(
+        blank=True,
+        help_text="Optional comment about why the status changed.",
+    )
+
+    class Meta:
+        ordering = ["-changed_at"]
+        verbose_name = "Task Status History"
+        verbose_name_plural = "Task Status Histories"
+
+    def __str__(self):
+        return (
+            f"[{self.task.task_code}] "
+            f"{self.from_status or '—'} → {self.to_status} "
+            f"@ {self.changed_at:%Y-%m-%d %H:%M}"
+        )

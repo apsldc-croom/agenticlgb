@@ -34,14 +34,29 @@ except ImportError:
     pass
 
 # ---------------------------------------------------------
-# DATABASE — SQLite for dev simplicity
+# DATABASE
+# Precedence:
+#   1. DATABASE_URL env var (set by docker-compose)
+#   2. Hardcoded localhost:5432 (direct host dev)
 # ---------------------------------------------------------
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": ROOT_DIR / "db.sqlite3",  # noqa: F405
+import os as _os
+_db_url = _os.environ.get("DATABASE_URL")
+
+if _db_url:
+    DATABASES = {"default": env.db_url(_db_url)}  # noqa: F405
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "postgres",
+            "USER": "postgres",
+            "PASSWORD": "123",
+            "HOST": "localhost",
+            "PORT": "5432",
+            "OPTIONS": {"connect_timeout": 10},
+        }
     }
-}
+
 
 # ---------------------------------------------------------
 # EMAIL — Console backend for dev

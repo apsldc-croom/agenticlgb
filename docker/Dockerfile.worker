@@ -1,1 +1,38 @@
-# Celery worker Dockerfile
+# =============================================================
+# Dockerfile.worker
+# Celery worker — reuses the backend image, different CMD
+# =============================================================
+FROM python:3.12-slim AS builder
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY LGB-backend/requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# =============================================================
+FROM python:3.12-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /install /usr/local
+COPY LGB-backend/ .
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    DJANGO_SETTINGS_MODULE=config.settings.dev
+
+# Celery worker: concurrency=2, loglevel=info
+CMD ["celery", "-A", "config", "worker", \
+     "--loglevel=info", \
+     "--concurrency=2", \
+     "--without-gossip", \
+     "--without-mingle"]

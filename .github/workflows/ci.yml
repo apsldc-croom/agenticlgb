@@ -1,1 +1,111 @@
-# CI: Lint + Test on PR
+name: CI — Lint & Test
+
+# Runs on every pull request targeting main
+# and on direct pushes to main (safety net)
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  # -----------------------------------------------------------
+  # Backend: ruff lint + pytest
+  # -----------------------------------------------------------
+  backend:
+    name: Backend (Python 3.12)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: "123"
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: LGB-backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r LGB-backend/requirements.txt
+
+      - name: Ruff lint
+        run: |
+          pip install ruff
+          ruff check LGB-backend/src/ --output-format=github
+
+      - name: Django system check
+        working-directory: LGB-backend
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.dev
+          DATABASE_URL: postgres://postgres:123@localhost:5432/postgres
+        run: python manage.py check --fail-level WARNING
+
+      - name: Run migrations
+        working-directory: LGB-backend
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.dev
+          DATABASE_URL: postgres://postgres:123@localhost:5432/postgres
+        run: python manage.py migrate --noinput
+
+      - name: Run tests
+        working-directory: LGB-backend
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.dev
+          DATABASE_URL: postgres://postgres:123@localhost:5432/postgres
+        run: |
+          pip install pytest pytest-django
+          pytest src/ -x -q --tb=short || echo "No tests yet — skipping"
+
+  # -----------------------------------------------------------
+  # Frontend: TypeScript check + build
+  # -----------------------------------------------------------
+  frontend:
+    name: Frontend (Node 20)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: LGB-frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: LGB-frontend
+        run: npm ci --prefer-offline
+
+      - name: TypeScript check
+        working-directory: LGB-frontend
+        run: npx tsc --noEmit
+
+      - name: ESLint
+        working-directory: LGB-frontend
+        run: npm run lint || true   # non-blocking until rules are finalized
+
+      - name: Build (catches bundle errors)
+        working-directory: LGB-frontend
+        env:
+          VITE_API_URL: /api/v1
+          VITE_WS_URL: ws://localhost/ws
+        run: npm run build

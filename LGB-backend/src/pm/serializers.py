@@ -26,6 +26,7 @@ from .models import (
     Tag,
     Task,
     TaskDependency,
+    TaskStatusHistory,
     TechDebt,
 )
 
@@ -79,6 +80,30 @@ class SubTaskSerializer(serializers.ModelSerializer):
             "id", "task", "title", "description",
             "status", "sort_order",
         ]
+
+
+# =========================================================
+# TASK STATUS HISTORY
+# =========================================================
+
+class TaskStatusHistorySerializer(serializers.ModelSerializer):
+    """Read-only audit trail of task status transitions."""
+    changed_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TaskStatusHistory
+        fields = [
+            "id", "task",
+            "from_status", "to_status",
+            "changed_by", "changed_by_name",
+            "changed_at", "note",
+        ]
+        read_only_fields = fields
+
+    def get_changed_by_name(self, obj):
+        if obj.changed_by:
+            return obj.changed_by.get_full_name()
+        return "system"
 
 
 # =========================================================
@@ -257,12 +282,12 @@ class TaskListSerializer(serializers.ModelSerializer):
 
     def get_assigned_to_name(self, obj):
         if obj.assigned_to:
-            return obj.assigned_to.get_full_name() or obj.assigned_to.username
+            return obj.assigned_to.get_full_name()
         return None
 
 
 class TaskDetailSerializer(serializers.ModelSerializer):
-    """Full task serializer with nested subtasks and dependencies."""
+    """Full task serializer with nested subtasks, dependencies and status history."""
     tags = TagSerializer(many=True, read_only=True)
     tag_ids = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(),
@@ -273,6 +298,7 @@ class TaskDetailSerializer(serializers.ModelSerializer):
     )
     subtasks = SubTaskSerializer(many=True, read_only=True)
     dependencies = TaskDependencySerializer(many=True, read_only=True)
+    status_history = TaskStatusHistorySerializer(many=True, read_only=True)
     subtask_progress = serializers.CharField(read_only=True)
     assigned_to_name = serializers.SerializerMethodField()
 
@@ -288,14 +314,16 @@ class TaskDetailSerializer(serializers.ModelSerializer):
             "ai_generated", "ai_summary", "ai_risk_score",
             "due_date", "completed_at",
             "tags", "tag_ids",
-            "subtasks", "dependencies", "subtask_progress",
+            "subtasks", "dependencies",
+            "status_history",
+            "subtask_progress",
             "sort_order", "created_at", "updated_at",
         ]
         read_only_fields = ["created_at", "updated_at"]
 
     def get_assigned_to_name(self, obj):
         if obj.assigned_to:
-            return obj.assigned_to.get_full_name() or obj.assigned_to.username
+            return obj.assigned_to.get_full_name()
         return None
 
 
