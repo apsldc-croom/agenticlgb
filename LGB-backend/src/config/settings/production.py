@@ -37,10 +37,10 @@ CSRF_COOKIE_SECURE = _ssl
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
-# ---------------------------------------------------------
-# STATIC FILES — WhiteNoise or S3
-# ---------------------------------------------------------
-STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
+# Use regular StaticFilesStorage — nginx serves /static/ directly.
+# Switch to ManifestStaticFilesStorage once collectstatic --post-process is
+# part of the CI pipeline.
+STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 
 # ---------------------------------------------------------
 # EMAIL — fallback to console if SMTP not configured yet
@@ -56,10 +56,7 @@ if _email_host:
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-# ---------------------------------------------------------
-# LOGGING — JSON structured for production
-# ---------------------------------------------------------
-LOGGING["formatters"]["json"] = {  # noqa: F405
+LOGGING.setdefault("formatters", {})["verbose"] = {  # noqa: F405
     "()": "django.utils.log.ServerFormatter",
     "format": "[{server_time}] {message}",
     "style": "{",
