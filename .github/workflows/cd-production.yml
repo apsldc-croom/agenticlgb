@@ -46,39 +46,47 @@ jobs:
           script: |
             set -e
 
-            echo "=== [1/6] Pulling latest code ==="
+            echo "=== [1/7] Pulling latest code ==="
             cd /opt/agenticlgb
-            git pull origin main
+            # Safe pull: stash any local changes, pull, restore
+            git stash --include-untracked 2>/dev/null || true
+            git fetch origin main
+            git reset --hard origin/main
+            git stash pop 2>/dev/null || true
 
-            echo "=== [2/6] Building + starting containers ==="
+            echo "=== [2/7] Building + starting containers ==="
             docker compose -f docker-compose.prod.yml \
               --env-file .env.prod \
               up -d --build \
               --remove-orphans
 
-            echo "=== [3/6] Waiting for backend health ==="
-            sleep 10
-            for i in $(seq 1 12); do
-              STATUS=$(docker inspect --format='{{.State.Health.Status}}' lgb_backend_prod 2>/dev/null || echo "missing")
-              echo "  attempt $i: $STATUS"
-              [ "$STATUS" = "healthy" ] && break
-              [ $i -eq 12 ] && { echo "Backend never became healthy!"; exit 1; }
-              sleep 5
-            done
+            echo "=== [3/7] Waiting for containers ==="
+            sleep 15
 
-            echo "=== [4/6] Running migrations ==="
+            echo "=== [4/7] Running migrations ==="
             docker compose -f docker-compose.prod.yml \
               --env-file .env.prod \
               exec -T backend python manage.py migrate --noinput
 
-            echo "=== [5/6] Collecting static files ==="
+            echo "=== [5/7] Collecting static files ==="
             docker compose -f docker-compose.prod.yml \
               --env-file .env.prod \
-              exec -T backend python manage.py collectstatic --noinput --clear
+              exec -T backend python manage.py collectstatic --noinput
 
-            echo "=== [6/6] Health check ==="
-            sleep 3
-            curl -f http://localhost/api/health/ || { echo "Health check FAILED"; exit 1; }
+            echo "=== [6/7] Restarting frontend (DNS refresh) ==="
+            docker compose -f docker-compose.prod.yml \
+              --env-file .env.prod \
+              restart frontend
+            sleep 5
+
+            echo "=== [7/7] Health check ==="
+            for i in $(seq 1 6); do
+              HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost/api/health/ 2>/dev/null || echo "000")
+              echo "  attempt $i: HTTP $HTTP_CODE"
+              [ "$HTTP_CODE" = "200" ] && break
+              [ $i -eq 6 ] && { echo "Health check FAILED after 6 attempts"; exit 1; }
+              sleep 5
+            done
 
             echo ""
             echo "✅ Deploy complete — $(date '+%Y-%m-%d %H:%M:%S %Z')"
