@@ -18,6 +18,7 @@ jobs:
   deploy:
     name: Deploy to VM (34.93.126.189)
     runs-on: ubuntu-latest
+    environment: production
 
     steps:
       - name: Checkout
