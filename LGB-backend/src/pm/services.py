@@ -6,6 +6,8 @@ Business logic layer for the PM module.
 Keeps views thin by encapsulating domain operations here.
 """
 
+from __future__ import annotations
+
 import logging
 
 from django.db import transaction

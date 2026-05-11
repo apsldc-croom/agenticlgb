@@ -12,7 +12,7 @@ from .base import *  # noqa: F401, F403
 # ---------------------------------------------------------
 DEBUG = False
 
-import os as _os
+import os as _os  # noqa: E402
 _raw_hosts = _os.environ.get("ALLOWED_HOSTS", "34.93.126.189,localhost,127.0.0.1")
 ALLOWED_HOSTS = [h.strip() for h in _raw_hosts.split(",") if h.strip()]
 

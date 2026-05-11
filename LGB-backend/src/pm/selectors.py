@@ -7,7 +7,7 @@ Encapsulates complex queries, aggregations, and reporting
 to keep views and services clean.
 """
 
-from django.db.models import Count, F, Q, Sum
+from django.db.models import Count, Sum
 
 from .models import (
     AIInsight,

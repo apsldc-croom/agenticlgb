@@ -39,7 +39,7 @@ except ImportError:
 #   1. DATABASE_URL env var (set by docker-compose)
 #   2. Hardcoded localhost:5432 (direct host dev)
 # ---------------------------------------------------------
-import os as _os
+import os as _os  # noqa: E402
 _db_url = _os.environ.get("DATABASE_URL")
 
 if _db_url:

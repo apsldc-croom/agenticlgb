@@ -9,7 +9,6 @@ Environment-specific overrides live in dev.py, staging.py, production.py.
 Settings are loaded via django-environ for 12-factor compliance.
 """
 
-import os
 from datetime import timedelta
 from pathlib import Path
 

@@ -6,7 +6,7 @@ URL routing for user management endpoints.
 
 from django.urls import path
 
-from .views import LGBTokenObtainPairView, MeView, UserDetailView, UserListCreateView
+from .views import MeView, UserDetailView, UserListCreateView
 
 app_name = "users"
 
