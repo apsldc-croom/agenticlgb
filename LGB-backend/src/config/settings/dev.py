@@ -40,10 +40,8 @@ except ImportError:
 #   2. Hardcoded localhost:5432 (direct host dev)
 # ---------------------------------------------------------
 import os as _os  # noqa: E402
-_db_url = _os.environ.get("DATABASE_URL")
-
-if _db_url:
-    DATABASES = {"default": env.db_url(_db_url)}  # noqa: F405
+if "DATABASE_URL" in _os.environ:
+    DATABASES = {"default": env.db("DATABASE_URL")}  # noqa: F405
 else:
     DATABASES = {
         "default": {
