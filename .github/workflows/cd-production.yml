@@ -1,8 +1,5 @@
 name: CD — Deploy to Server
 
-# Triggers:
-#   - Push to main (auto-deploy after CI passes)
-#   - Manual trigger from GitHub Actions UI (workflow_dispatch)
 on:
   push:
     branches: [main]
@@ -13,89 +10,78 @@ on:
         required: false
         default: "Manual trigger"
 
-# Only one deploy runs at a time — cancel queued if a new push arrives
 concurrency:
   group: deploy-production
-  cancel-in-progress: false   # false = let running deploy finish, queue next
+  cancel-in-progress: false
 
 jobs:
   deploy:
     name: Deploy to VM (34.93.126.189)
     runs-on: ubuntu-latest
 
-    # Only deploy if CI passed (when triggered by push)
-    # workflow_dispatch bypasses this check intentionally
-    needs: []   # Remove this line and add "needs: [backend, frontend]" once CI is in same file
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # -----------------------------------------------------------
-      # SSH into VM and deploy
-      # -----------------------------------------------------------
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          key: ${{ secrets.VM_SSH_KEY }}
-          port: 22
-          timeout: 120s
-          command_timeout: 20m
-          script: |
-            set -e
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'DEPLOY_SCRIPT'
+          set -e
 
-            echo "=== [1/7] Pulling latest code ==="
-            cd /opt/agenticlgb
-            # Safe pull: stash any local changes, pull, restore
-            git stash --include-untracked 2>/dev/null || true
-            git fetch origin main
-            git reset --hard origin/main
-            git stash pop 2>/dev/null || true
+          echo "=== [1/7] Pulling latest code ==="
+          cd /opt/agenticlgb
+          git stash --include-untracked 2>/dev/null || true
+          git fetch origin main
+          git reset --hard origin/main
+          git stash pop 2>/dev/null || true
 
-            echo "=== [2/7] Building + starting containers ==="
-            docker compose -f docker-compose.prod.yml \
-              --env-file .env.prod \
-              up -d --build \
-              --remove-orphans
+          echo "=== [2/7] Building + starting containers ==="
+          docker compose -f docker-compose.prod.yml \
+            --env-file .env.prod \
+            up -d --build \
+            --remove-orphans
 
-            echo "=== [3/7] Waiting for containers ==="
-            sleep 15
+          echo "=== [3/7] Waiting for containers ==="
+          sleep 15
 
-            echo "=== [4/7] Running migrations ==="
-            docker compose -f docker-compose.prod.yml \
-              --env-file .env.prod \
-              exec -T backend python manage.py migrate --noinput
+          echo "=== [4/7] Running migrations ==="
+          docker compose -f docker-compose.prod.yml \
+            --env-file .env.prod \
+            exec -T backend python manage.py migrate --noinput
 
-            echo "=== [5/7] Collecting static files ==="
-            docker compose -f docker-compose.prod.yml \
-              --env-file .env.prod \
-              exec -T backend python manage.py collectstatic --noinput
+          echo "=== [5/7] Collecting static files ==="
+          docker compose -f docker-compose.prod.yml \
+            --env-file .env.prod \
+            exec -T backend python manage.py collectstatic --noinput
 
-            echo "=== [6/7] Restarting frontend (DNS refresh) ==="
-            docker compose -f docker-compose.prod.yml \
-              --env-file .env.prod \
-              restart frontend
+          echo "=== [6/7] Restarting frontend (DNS refresh) ==="
+          docker compose -f docker-compose.prod.yml \
+            --env-file .env.prod \
+            restart frontend
+          sleep 5
+
+          echo "=== [7/7] Health check ==="
+          for i in $(seq 1 6); do
+            HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost/api/health/ 2>/dev/null || echo "000")
+            echo "  attempt $i: HTTP $HTTP_CODE"
+            [ "$HTTP_CODE" = "200" ] && break
+            [ $i -eq 6 ] && { echo "Health check FAILED"; exit 1; }
             sleep 5
+          done
 
-            echo "=== [7/7] Health check ==="
-            for i in $(seq 1 6); do
-              HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost/api/health/ 2>/dev/null || echo "000")
-              echo "  attempt $i: HTTP $HTTP_CODE"
-              [ "$HTTP_CODE" = "200" ] && break
-              [ $i -eq 6 ] && { echo "Health check FAILED after 6 attempts"; exit 1; }
-              sleep 5
-            done
+          echo ""
+          echo "✅ Deploy complete — $(date '+%Y-%m-%d %H:%M:%S %Z')"
+          DEPLOY_SCRIPT
 
-            echo ""
-            echo "✅ Deploy complete — $(date '+%Y-%m-%d %H:%M:%S %Z')"
-
-      # -----------------------------------------------------------
-      # Notify on failure (add Slack/email webhook here later)
-      # -----------------------------------------------------------
       - name: Notify on failure
         if: failure()
         run: |
-          echo "::error::Deploy to 34.93.126.189 FAILED — check logs above"
-          # TODO: Add Slack / email notification here
+          echo "::error::Deploy to ${{ secrets.VM_HOST }} FAILED — check logs above"
