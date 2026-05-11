@@ -10,9 +10,7 @@ from django.test import TestCase
 
 from pm.models import (
     ArchitectureLayer,
-    Feature,
     Goal,
-    Milestone,
     Phase,
     Project,
     SubTask,

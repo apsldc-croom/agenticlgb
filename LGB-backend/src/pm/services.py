@@ -9,9 +9,13 @@ Keeps views thin by encapsulating domain operations here.
 from __future__ import annotations
 
 import logging
+import typing
 
 from django.db import transaction
 from django.utils import timezone
+
+if typing.TYPE_CHECKING:
+    from .models import Phase, Project, Task
 
 logger = logging.getLogger(__name__)
 

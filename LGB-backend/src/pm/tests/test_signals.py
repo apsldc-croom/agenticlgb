@@ -30,7 +30,7 @@ class SubTaskCompletionSignalTests(TestCase):
         )
 
     def test_all_subtasks_completed_moves_task_to_review(self):
-        sub1 = SubTask.objects.create(
+        SubTask.objects.create(
             task=self.task,
             title="Sub 1",
             status="completed",

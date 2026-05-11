@@ -8,7 +8,7 @@ List vs. detail serializers are swapped via get_serializer_class().
 Custom actions expose additional endpoints (e.g., dashboard stats).
 """
 
-from django.db.models import Count, Q
+from django.db.models import Count
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
