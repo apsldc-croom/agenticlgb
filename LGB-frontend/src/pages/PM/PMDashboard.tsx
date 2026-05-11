@@ -21,16 +21,20 @@ const STATUS_DOT: Record<string, string> = {
 const STATUS_LBL: Record<string, string> = {
     not_started: 'Not Started', in_progress: 'In Progress', scaffolded: 'Scaffolded',
     completed: 'Completed', blocked: 'Blocked', deferred: 'Deferred',
+    planning: 'Planning', review: 'Review', cancelled: 'Cancelled',
 };
 const CAT_ICON: Record<string, typeof Code2> = {
-    backend: Server, frontend: Code2, devops: Gauge, ai: Brain,
+    backend: Server, frontend: Code2, devops: Gauge, ai: Brain, ai_ml: Brain,
     docs: FileText, testing: TestTube, security: Shield, infra: Layers,
+    database: Server,
 };
 const CAT_GRAD: Record<string, string> = {
     backend: 'from-blue-500 to-cyan-500', frontend: 'from-violet-500 to-purple-500',
     devops: 'from-amber-500 to-orange-500', ai: 'from-emerald-500 to-teal-500',
+    ai_ml: 'from-emerald-500 to-teal-500',
     docs: 'from-slate-400 to-slate-500', testing: 'from-pink-500 to-rose-500',
     security: 'from-red-500 to-orange-500', infra: 'from-cyan-500 to-blue-500',
+    database: 'from-orange-500 to-yellow-500',
 };
 
 function Ring({ value, size = 100 }: { value: number; size?: number }) {
