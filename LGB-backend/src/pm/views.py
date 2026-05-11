@@ -131,11 +131,24 @@ class ProjectViewSet(viewsets.ModelViewSet):
             for p in phases
         ]
 
+        priority_breakdown = dict(
+            tasks.values_list("priority")
+            .annotate(count=Count("id"))
+            .values_list("priority", "count")
+        )
+        category_breakdown = dict(
+            tasks.values_list("category")
+            .annotate(count=Count("id"))
+            .values_list("category", "count")
+        )
+
         return Response({
             "project": project.name,
             "overall_progress": project.progress_percentage,
             "total_tasks": total_tasks,
             "status_breakdown": status_breakdown,
+            "priority_breakdown": priority_breakdown,
+            "category_breakdown": category_breakdown,
             "phases": phase_progress,
             "open_tech_debt": project.tech_debts.exclude(status="completed").count(),
             "unresolved_insights": project.ai_insights.filter(resolved=False).count(),
