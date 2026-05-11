@@ -1,6 +1,6 @@
 #pushing the changes to cloud
 git add .
-git commit -m "docker setup in progress"
+git commit -m "docker setup in progress CI/CD seems done now"
 git push origin main
 
 
