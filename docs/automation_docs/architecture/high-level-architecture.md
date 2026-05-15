@@ -1,0 +1,68 @@
+# High-Level Architecture
+
+## Core Components
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     User Interface Layer                     │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Orchestration Layer                       │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │  Router  │  │ Planner  │  │ Executor │  │ Monitor  │   │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      Agent Layer                              │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │ Architect│  │  Coder   │  │ Reviewer │  │  Tester  │   │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  AI Infrastructure Layer                     │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │  Memory  │  │Retrieval │  │ Routing  │  │   LLM    │   │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   Execution Layer                            │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │ Workspace│  │   Git    │  │ Commands │  │  Files   │   │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Layer Responsibilities
+
+### User Interface
+- Accept user requests
+- Display results
+- Handle feedback
+
+### Orchestration
+- Route tasks to appropriate agents
+- Plan execution steps
+- Monitor progress
+
+### Agents
+- Execute specific roles (coding, review, etc.)
+- Generate outputs
+- Handle errors
+
+### AI Infrastructure
+- Manage context and memory
+- Route to appropriate models
+- Handle LLM interactions
+
+### Execution
+- Workspace management
+- Git operations
+- Command execution

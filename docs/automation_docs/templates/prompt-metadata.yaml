@@ -1,0 +1,18 @@
+name: <prompt-name>
+version: v1
+purpose: <what this prompt does>
+
+recommended_models:
+  - <model-1>
+  - <model-2>
+
+constraints:
+  - <constraint-1>
+  - <constraint-2>
+
+failure_cases:
+  - <known-failure-1>
+  - <known-failure-2>
+
+notes: |
+  Additional notes about usage.

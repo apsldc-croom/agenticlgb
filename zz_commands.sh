@@ -1,6 +1,6 @@
 #pushing the changes to cloud
 git add .
-git commit -m "docker setup in progress CI/CD seems done now"
+git commit -m "automation docs added from prompt to tasks finisher"
 git push origin main
 
 
